@@ -10,109 +10,137 @@ namespace PopUp
 {
     public partial class MainPage : ContentPage
     {
+        string name = string.Empty;
+        string[] questions;
+        string[][] choices;
+        string[] answers;
+        int correctAnswersCount;
+        int totalQuestionsCount;
+        int currentQuestionIndex = -1;
+        Entry nameEntry;
+
         public MainPage()
         {
+            InitializeComponent();
+
             Button alertQbutton = new Button
             {
                 Text = "Загадки",
-                VerticalOptions = LayoutOptions.Start,
-                HorizontalOptions = LayoutOptions.Center
+                HorizontalOptions = LayoutOptions.FillAndExpand,
+                VerticalOptions = LayoutOptions.CenterAndExpand,
+                BackgroundColor = Color.Aquamarine,
+                TextColor = Color.Black,
+                FontSize = 24
             };
             alertQbutton.Clicked += AlertQbutton_Clicked;
 
-            Entry nameEntry = new Entry
+            nameEntry = new Entry
             {
                 Placeholder = "Введите ваше имя",
-                HorizontalOptions = LayoutOptions.FillAndExpand,
-                VerticalOptions = LayoutOptions.CenterAndExpand
+                BackgroundColor = Color.Aquamarine,
+                TextColor = Color.Black,
+                FontSize = 24
             };
+            nameEntry.TextChanged += NameEntry_TextChanged;
+
             Content = new StackLayout
             {
                 Children = {
-            nameEntry,
-            alertQbutton
+                new Image { Source = "zagadka.jpg" },
+                nameEntry,
+                alertQbutton
+                }
+            };
         }
-            };
-            alertQbutton.Clicked += AlertQbutton_Clicked;
-            Button alertButton = new Button
-            {
-                Text = "Teade",
-                VerticalOptions = LayoutOptions.Start,
-                HorizontalOptions = LayoutOptions.Center
-            };
-            alertButton.Clicked += AlertButton_Clicked;
-            Button alertYesNoButton = new Button
-            {
-                Text = "Jah või ei",
-                VerticalOptions = LayoutOptions.Start,
-                HorizontalOptions = LayoutOptions.Center
-            };
-            alertYesNoButton.Clicked += AlertYesNoButton_Clicked;
-            Button alertListButtom = new Button
-            {
-                Text = "Valik",
-                VerticalOptions = LayoutOptions.Start,
-                HorizontalOptions = LayoutOptions.Center
-            };
-            Button alertQuestButton = new Button
-            {
-                Text = "Kusimus",
-                VerticalOptions = LayoutOptions.Start,
-                HorizontalOptions = LayoutOptions.Center
-            };
-            alertQuestButton.Clicked += AlertQuestButton_Clicked;
-            alertListButtom.Clicked += AlertListButtom_Clicked;
-            Content = new StackLayout { Children = { alertButton, alertYesNoButton, alertListButtom, alertQuestButton, alertQbutton } };
+
+        private void NameEntry_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            name = nameEntry.Text;
         }
 
         private async void AlertQbutton_Clicked(object sender, EventArgs e)
         {
-            string name = string.Empty;
-
-            if (Content is StackLayout stackLayout)
+            if (questions == null || answers == null || choices == null)
             {
-                var nameEntry = stackLayout.Children.FirstOrDefault(c => c is Entry) as Entry;
-                if (nameEntry != null && !string.IsNullOrWhiteSpace(nameEntry.Text))
+                questions = new[]
                 {
-                    name = nameEntry.Text;
+                $"Привет, " + name + "! Ответь: Белым снегом всё одето - Значит, наступает...?",
+                $"Привет, " + name + "! Ответь: Ночью каждое оконце Слабо освещает...?",
+                $"Привет, " + name + "! Ответь: Друг зверей и друг детей Добрый доктор...?",
+                $"Привет, " + name + "! Под деревом четыре льва, Один ушёл, осталось...?",
+                $"Привет, " + name + "! Ответь: Кукарекает спросонок Милый, добрый...?"
+                };
+                choices = new[]
+                {
+                new[] { "Лето", "Зима", "Осень" },
+                new[] { "Солнце", "Луна", "Звезды" },
+                new[] { "Бармалей", "Айболит", "Стрелок" },
+                new[] { "Два", "Три", "Один" },
+                new[] { "Поросёнок", "Телёнок", "Петух" }
+                };
+                answers = new[] { "Зима", "Луна", "Айболит", "Три", "Петух" };
+            }
+
+
+                        currentQuestionIndex++;
+                        if (currentQuestionIndex >= questions.Length)
+                        {
+                            // Show result
+                            await DisplayAlert("Результат", $"Правильных ответов: {correctAnswersCount}/{totalQuestionsCount}", "OK");
+                            // Reset
+                            correctAnswersCount = 0;
+                            totalQuestionsCount = 0;
+                            currentQuestionIndex = -1;
+                        }
+                        else
+                        {
+                            totalQuestionsCount++;
+
+                            string question = questions[currentQuestionIndex].Replace("{name}", name);
+                            string answer = answers[currentQuestionIndex];
+                            string[] choice = choices[currentQuestionIndex];
+
+                            var action = await DisplayActionSheet(question, "OK", "Закрыть", choice[0], choice[1], choice[2]);
+
+                            if (action == answer)
+                            {
+                                correctAnswersCount++;
+                                await DisplayAlert("Правильно!", "👍", "OK");
+                            }
+                            else
+                            {
+                                await DisplayAlert("Неправильно!", "👎", "OK");
+                            }
+
+                            AlertQbutton_Clicked(sender, e); // Go to next question
+                        }
+                    }
                 }
-            }
-
-            var action = await DisplayActionSheet("Ответь: Зимой и летом одним цветом?", "OK", "Закрыть", "Крокодил", "Ёлка","Снег");
-
-            if (action == "Ёлка")
-            {
-                await DisplayAlert("Правильно!", "👍", "OK");
-            }
-            else
-            {
-                await DisplayAlert("Неправильно!", "👎", "OK");
-            }
-
-
-        }
-
-        private async void AlertQuestButton_Clicked(object sender, EventArgs e)
-        {
-            string result1 = await DisplayPromptAsync("Kusimus", "Kuidas laheb?", placeholder: "Tore!");
-            string result2 = await DisplayPromptAsync("Vasta", "Millega vordub 5 + 5?", maxLength: 2, keyboard: Keyboard.Numeric);
-
-        }
-
-        private async void AlertListButtom_Clicked(object sender, EventArgs e)
-        {
-            var action = await DisplayActionSheet("Mida teha", "Loobu", "Kustutada", "Tantsida", "Laulda", "Joonistada");
-        }
-
-        private async void AlertYesNoButton_Clicked(object sender, EventArgs e)
-        {                                                 
-            bool result = await DisplayAlert("Kinnitus", "Kas oled kindel?", "Olen kindel", "Ei ole kindel");
-            await DisplayAlert("Teade", "Teie valik on: " + (result ? "Jah" : "Ei"), "OK");
-        }
-
-        private void AlertButton_Clicked(object sender, EventArgs e)
-        {
-            DisplayAlert("Teade", "Teil on uus teade", "OK");
-        }
-    }
+            
+    
 }
+
+
+
+            
+
+
+
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+
