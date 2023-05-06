@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,12 +19,13 @@ namespace PopUp
         int totalQuestionsCount;
         int currentQuestionIndex = -1;
         Entry nameEntry;
-
+        private List<string> zagadki = new List<string>();
+        private Dictionary<string, string> otgadki = new Dictionary<string, string>();
         public MainPage()
         {
             InitializeComponent();
-
-            Button alertQbutton = new Button
+             
+        Button alertQbutton = new Button
             {
                 Text = "Загадки",
                 HorizontalOptions = LayoutOptions.FillAndExpand,
@@ -33,6 +35,17 @@ namespace PopUp
                 FontSize = 24
             };
             alertQbutton.Clicked += AlertQbutton_Clicked;
+
+            Button AddQbutton = new Button
+            {
+                Text = "Добавь загадку",
+                HorizontalOptions = LayoutOptions.FillAndExpand,
+                VerticalOptions = LayoutOptions.CenterAndExpand,
+                BackgroundColor = Color.Aquamarine,
+                TextColor = Color.Black,
+                FontSize = 24
+            };
+            AddQbutton.Clicked += AddQbutton_Clicked;
 
             nameEntry = new Entry
             {
@@ -48,10 +61,48 @@ namespace PopUp
                 Children = {
                 new Image { Source = "zagadka.jpg" },
                 nameEntry,
-                alertQbutton
+                alertQbutton,
+                AddQbutton
                 }
             };
         }
+        async Task SaveDataToFileAsync(string fileName, string data)
+        {
+            string path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string fullPath = Path.Combine(path, fileName);
+
+            using (StreamWriter sw = new StreamWriter(fullPath, true))
+            {
+                await sw.WriteAsync(data).ConfigureAwait(false);
+            }
+        }
+        private async  void AddQbutton_Clicked(object sender, EventArgs e)
+        {
+            {
+                string zagadka = await DisplayPromptAsync("Введите новую загадку", "");
+                if (!string.IsNullOrEmpty(zagadka))
+                {
+                    zagadki.Add(zagadka);
+                    await SaveDataToFileAsync("Zagadki.txt", $"{zagadka}\n");
+                }
+            }
+        }
+
+        async void OnAddSolution(object sender, EventArgs e)
+        {
+            string zagadka = await DisplayActionSheet("Выберите загадку", "Отмена", null, zagadki.ToArray());
+            if (zagadka != "Отмена")
+            {
+                zagadka = await DisplayPromptAsync("Введите новую загадку", "");
+                if (!string.IsNullOrEmpty(zagadka))
+                {
+                    zagadki.Add(zagadka);
+                    await SaveDataToFileAsync("Zagadki.txt", $"{zagadka}\n");
+                }
+            }
+        }
+
+       
 
         private void NameEntry_TextChanged(object sender, TextChangedEventArgs e)
         {
